@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureTableStorage", "AzureTableStorage\AzureTableStorage.csproj", "{765C5D35-617B-4E34-97E2-3E7EB93589EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CosmosDB", "CosmosDB\CosmosDB.csproj", "{6F8D95A9-BEC4-4262-8F4E-498177BB8FB1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{765C5D35-617B-4E34-97E2-3E7EB93589EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{765C5D35-617B-4E34-97E2-3E7EB93589EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{765C5D35-617B-4E34-97E2-3E7EB93589EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{765C5D35-617B-4E34-97E2-3E7EB93589EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F8D95A9-BEC4-4262-8F4E-498177BB8FB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F8D95A9-BEC4-4262-8F4E-498177BB8FB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F8D95A9-BEC4-4262-8F4E-498177BB8FB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F8D95A9-BEC4-4262-8F4E-498177BB8FB1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4519FAD9-1E5C-47B2-9C4A-9B486A795EF6}
+	EndGlobalSection
+EndGlobal
