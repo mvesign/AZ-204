@@ -603,5 +603,15 @@ Within CosmosDB we have two types of triggers, **pre-triggers** and **post-trigg
 An example of a trigger
 
 ```javascript
-
+function validateOrder() {
+    var theContext = getContext();
+    var theRequest = theContext.getRequest();
+    var item = theRequest.getBody();
+    if (item["OrderCustomer"] != undefined && item["OrderCustomer"] != null) {
+        theRequest.setBody(item);
+    }
+    else {
+        throw new Error('OrderCustomer must be specified');
+    }
+}
 ```
