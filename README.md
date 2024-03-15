@@ -615,3 +615,49 @@ function validateOrder() {
     }
 }
 ```
+
+###### CosmosDB REST API
+
+Clients can manage documents or database collections programmatically via the CosmosDB REST API. When using this API an authorization header is required, containing a token generated via the CosmosDB REST API.
+
+When multiple clients are managing documents or database collections, the use of an additional value is required. This value is part of the **Optimistic Concurrency Control** (OCC), and comes in the property `_etag`. This `_etag` can be managed via the CosmosDB SDK programmatically.
+
+```csharp
+var accessCondition = new AccessCondition
+{
+    Condition = readDoc.ETag,
+    Type = AccessConditionType.IfMatch
+};
+await client.ReplaceDocumentAsync(
+    readDoc,
+    new RequestOptions
+    {
+        AccessCondition = accessCondition
+    }
+);
+```
+
+#### Questions
+
+1. Which APIs are supported by CosmosDB?
+   
+   - *There are five at the moment. Table API, MongoDB API, Cassandra API, Gremlin API and the default Core (SQL) API.*
+
+2- What is the difference between a composite index and a range index?
+   
+   - *Range index consist on a single field of the string or number type, while composite consist of multiple fields.*
+
+3- What is the defailt CosmosDB backup option?
+   
+   - *Periodic backup. Where the retention policy is limited by month, with backup intervals at a minimum of 1 hour.
+     Also noteworthy is that a restoration required sending a request to the support team.*
+
+4- Can you execute the CosmosDB trigger from the Azure portal?
+   
+   - *No. They should explicitly be called from the CosmosDB SDK.*
+
+5- What language is used for stored procedures?
+   
+   - *Next to triggers, stored procedures are written in Javascript.*
+
+## 06 Developing solutions that uses Azure Blob Storage
