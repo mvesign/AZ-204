@@ -642,9 +642,7 @@ await client.ReplaceDocumentAsync(
 1. Which APIs are supported by CosmosDB?
    
    - *There are five at the moment. Table API, MongoDB API, Cassandra API, Gremlin API and the default Core (SQL) API.*
-
-2- What is the difference between a composite index and a range index?
-   
+2-  What is the difference between a composite index and a range index?
    - *Range index consist on a single field of the string or number type, while composite consist of multiple fields.*
 
 3- What is the defailt CosmosDB backup option?
@@ -661,3 +659,146 @@ await client.ReplaceDocumentAsync(
    - *Next to triggers, stored procedures are written in Javascript.*
 
 ## 06 Developing solutions that uses Azure Blob Storage
+
+We can create Azure Storage Accounts and put files or **binary large objects** (blobs) inside these. A storage account is setup for a region, but can be synchronized over multiple regions and thus multiple storage accounts, to minimize the latency.
+
+When creating an Azure Storage Account, it must be a DNS-unique name in lowercase letters and numbers (so no underscores or such). A container must be created for the Azure Storage Account, similar to a folder. Nesting of containers isn't possible, but virtual folders is. Blobs or files can than be stored in a container.
+
+Two admin keys are created by default for managing purposes. No for application use. Applications should use **shared access signatures** (SAS) or access via **role-based access control** (RBAC).
+
+Several types of access levels can be setup on a blob or container.
+
+- Private access level
+  
+  - No anonymous accesss. Setup on container level. Requires an admin key to get access to blobs.
+
+- Blob access level
+  
+  - Anonymous read access to the specific blob only.
+
+- Container access level
+  
+  - Anonymous read access to all blobs within a container.
+
+#### High availability and durability
+
+Azure Storage Accounts have **Locally-Redundant Storage** (LRS), meaning it stores 3 copies of the data on different hardware. It also has **Zone-Redundant Storage** (ZRS), where copies are stored in different buildings in the same region, but with a separate source of power and internet.
+
+It also has **Geo-Redundant Storage** (GRS) and **Geo-Zone-Redundant Storage** (GZRS), with the difference is that copies are stored over multiple regions.
+
+And finaly it has **Read-Access Geo-Redundant Storage** (RA-GRS), if read access to the copy of the second region is desired.
+
+#### Setting up blobs
+
+When setting up a blob, we must select.
+
+- The redundancy type from previous section.
+
+- Performance tier. Which can be **Standard** or **Premium**.
+  
+  - Premium is not available for Azure Queue Storage or Table Storage.
+  
+  - Premium should be selected when performance is important.
+
+- Access tier. Which can be **Hot**, **Cool** or **Archive**.
+  
+  - **Hot** being for data that requires a lot of read-write transactions.
+  
+  - **Cool** being for that can go for days without being accessed. But must persist for at least 30 days.
+  
+  - And **Archive** for rarely accessed data. But must persist for at least 180 days.
+
+- Blob type. Which can be **Block**, **Append** or **Page**.
+  
+  - **Block** for composing blocks of data. Is the default type. Can include 50.000 different-size blocks up to a maximum of 400MB per block. Only type which allows *blob access level*.
+  
+  - **Append** for appending data to a blob, such as tracing and logging workloads. With a maximum size of 195GB.
+  
+  - **Page** for improving random access, such as storing virtual disks. Blob consists of 512-byte pages. When writing, it can overwrite just one page and commits wires immediately. With a maximum of 8TB.
+
+The access tier can be configured with policy rules to move blobs around, before putting it up for deletion. This setup is very useful for logs and backup retention.
+
+```bash
+# First create the resource group
+az group create --name "mjoy-rg" --location "westeurope"
+# Than create the storage account
+az storage account create --name "mjoysa" --resource-group "mjoy-rg"
+# And get the first admin key and connection string
+az storage account keys list --account-name "mjoysa" --query [0].value
+az storage account show-connection-string --name "mjoysa"
+  --resource-group "mjoy-rg"
+# Create a container with the retrieved key
+az storage container create --name "products" --public-access "blob"
+  --account-name "mjoysa" --account-key "[STORAGE-ACCOUNT-KEY]"
+# Upload a file to the created container
+az storage blob upload --account-name "mjoysa"
+  --container-name "products" --account-key "[STORAGE-ACCOUNT-KEY]"
+  --file "logo.png" --name "logo.png"
+# Then show the uploaded file
+az storage blob show --name "logo.png" --account-name "mjoysa"
+  --container-name "products" --account-key "[STORAGE-ACCOUNT-KEY]"
+# This file is also accessible via its public URL
+# https://mjoysa.blob.core.windows.net/products/logo.png
+```
+
+Below overview of setting up a statis website with an index and a 404-page.
+
+```bash
+# No need to create a new resource group.
+# Than create the storage account
+az storage account create --name "mjoysa2" --resource-group "mjoy-rg"
+# And get the first admin key
+az storage account keys list --account-name "mjoysa2" --query [0].value
+# Enable the static website container
+az storage blob service-properties update --account-name "mjoysa2"
+  --static-website --404-document "404.html"
+  --index-document "index.html" --account-key "[STORAGE-ACCOUNT-KEY]"
+# Upload the static HTML pages
+# Make sure the 404.html and index.html pages are locally present
+az storage blob upload --account-name "mjoysa2"
+  --container-name '$web' --account-key "[STORAGE-ACCOUNT-KEY]"
+  --file "404.html" --name "404.html"
+az storage blob upload --account-name "mjoysa2"
+  --container-name '$web' --account-key "[STORAGE-ACCOUNT-KEY]"
+  --file "index.html" --name "index.html"
+# And finally get the public available URL
+az storage account show --name "mjoysa2" --query "primaryEndpoints.web"
+```
+
+#### Encryption
+
+The only and default option for encryption is **Azure Storage Service Encryption** (SSE). But it can be used with different kind of keys, such as Microsoft keys, keys hosted in Azure Key Vault or hosted by third-party services.
+
+Files can be explicitly encrypted with available services such as **Azure Rights Management** (Azure RMS) or SDKs.
+
+#### Metadata and tags
+
+Searching for blobs can be simplified by setting up **blob index tags** as metadata of blobs. This metadata can be searched without downloading the actual content of the blob, by making use of **Azure Cognitive Service** via Web API requests.
+
+When a blob is modified the index will be modified as well, to ensure that the blob is searchable.
+
+#### Questions
+
+1. How can you increase the availability of the Azure Blob Storage service?
+   
+   - *By default the data is stored in copies over 3 different hardware components. But you can choose over several redundancy types to increase the availability. Such as **Local-Redundant Storage** or **Geo-Redundant Storage**.*
+
+2. What features are available to protect data from deletion?
+   
+   - *You have **point-in-time restore**, where you can restore one or more containers to an earlier state.
+     You also have **soft delete** to recover blobs that were previously marked for deletion.
+     And finaly you have **versioning**, to automatically maintain previous versions pf your blobs.*
+
+3. Can you leverage an SDK to read blob metadata without downloading the blob?
+   
+   - *Yes. Needs to setup metadata in the container so an index can be build up.*
+
+4. Can we migrate blobs between access tiers automatically?
+   
+   - *Yes. This can be done via setting up policy rules.*
+
+5. What type of data can be persisted in blobs?
+   
+   - *Blob stands for **binary large objects**, such as files or text data.*
+
+## 07 User Authentication and Authorization
