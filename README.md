@@ -14,6 +14,10 @@
   
   - Azure Active Directory
 
+- OIDC
+  
+  - OpenID Connect
+
 - RBAC
   
   - Role-based access control
@@ -802,3 +806,33 @@ When a blob is modified the index will be modified as well, to ensure that the b
    - *Blob stands for **binary large objects**, such as files or text data.*
 
 ## 07 User Authentication and Authorization
+
+Within Azure, Microsoft identity platform is used for authentication and authorization. This platform uses the standards **OAuth2.0** for authentication and **OpenID Connect** (OIDC). Where **OpenID Connect** is build on top of **OAuth2.0**, meaning it shares many  thermonology and flows.
+
+#### Azure Active Directory
+
+For authentication, setup of an **Azure Active Directory** (AAD) tentant is required for applications in order to delegate identity and access management functions to Azure Active Directory.
+
+When setting up an application for an Azure Active Directory tenant, we determine if it is a single tenant app (also called the **home tenant** and meaning it can only access the Azure Active Directory it is registered at), or a multi-tenant app (meaning it can access other Azure Active Directory tenants as well).
+
+During registration, an application object is created within the home tenant, visible in the **App registrations** blade of the Azure Active Directory. Which is a template for creating **service principals**. The setup of a service principal equals a representation of the application, and is located in the **Enterprise applications** blade of the Azure Active Directory.
+
+Two types of permissions are available, **delegated permissions** and **application permissions**. Where a delegated permission is required when an application acts on behalf of a signed-in user. And application permission is required when the application acts on it's own behalf. Only admins can consent for the latter.
+
+Three types of consents are available.
+
+- **Incremental and dynamic user consent**
+  
+  - User can request minimal permissions upfront. When additional permissions are required, user will be prompted for consent of these permissions. Only available for delegated permissions.
+
+- **Static user consent**
+  
+  - Specify all required permissions up front and requests consent to the user. Downside is all required permissions must be known in advance.
+
+- **Admin consent**
+  
+  - When more privileged permissions is required. In case of highly privileged information, to keep control. When admin consent is setup, only admins will be prompted.
+
+Final part is setting up conditional access. In regular scenarios of conditional access, no code changes are required. Setup can be done in the service principal of the **Microsoft Entra** portal.
+
+#### Microsoft Authentication Library (MSAL)
