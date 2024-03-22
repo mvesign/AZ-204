@@ -646,21 +646,21 @@ await client.ReplaceDocumentAsync(
 1. Which APIs are supported by CosmosDB?
    
    - *There are five at the moment. Table API, MongoDB API, Cassandra API, Gremlin API and the default Core (SQL) API.*
-2-  What is the difference between a composite index and a range index?
+     2-  What is the difference between a composite index and a range index?
    - *Range index consist on a single field of the string or number type, while composite consist of multiple fields.*
 
 3- What is the defailt CosmosDB backup option?
-   
-   - *Periodic backup. Where the retention policy is limited by month, with backup intervals at a minimum of 1 hour.
-     Also noteworthy is that a restoration required sending a request to the support team.*
+
+- *Periodic backup. Where the retention policy is limited by month, with backup intervals at a minimum of 1 hour.
+  Also noteworthy is that a restoration required sending a request to the support team.*
 
 4- Can you execute the CosmosDB trigger from the Azure portal?
-   
-   - *No. They should explicitly be called from the CosmosDB SDK.*
+
+- *No. They should explicitly be called from the CosmosDB SDK.*
 
 5- What language is used for stored procedures?
-   
-   - *Next to triggers, stored procedures are written in Javascript.*
+
+- *Next to triggers, stored procedures are written in Javascript.*
 
 ## 06 Developing solutions that uses Azure Blob Storage
 
@@ -836,3 +836,151 @@ Three types of consents are available.
 Final part is setting up conditional access. In regular scenarios of conditional access, no code changes are required. Setup can be done in the service principal of the **Microsoft Entra** portal.
 
 #### Microsoft Authentication Library (MSAL)
+
+Microsoft Authentication Library (MSAL) is the successor of Active Directory Authentication Library (ADAL), which was part of Azure Active Directory. Microsoft Authentication Library will do heavy lifting for us, such as.
+
+- Usage of OAuth and OpenID Connect libraries.
+
+- Handling of protocol level details.
+
+- Obtain tokens on behalf of users or an application.
+
+- Handle token expirations by caching and refreshing tokens.
+
+- Supports any Microsoft identity.
+
+- Deliver actionable exceptions, logging and telemetry.
+
+#### Microsoft Graph
+
+Microsoft Graph is to access data on **Microsoft 365 core services**. Three main components to help with access and flow of data.
+
+- Microsoft Graph API
+
+- Microsoft Graph connectors.
+  
+  - Used to bring external sources into Microsoft Graph. Such as Jira, SalesForce, etc.
+
+- Microsoft Graph Data Connect
+
+With the Microsoft Graph Explorer we can explor REST calls and see what data can be returned. The actual implementation is done via SDKs, such as the **core library** and the **service library**. Where the core library has the core functionalities. And the service library has models and builders for the Microsoft Graph metadata.
+
+#### Shared Access Signatures
+
+A shared access signature is a signed URI that provides defined access rights to specific resources within a storage account for a specific period.
+
+Three types os shared access signatures available in Azure.
+
+- User delegation SAS
+  
+  - Most secure because it is linked to Azure Acive Directory credentials. It is only supported for *Blob Storage*.
+
+- Service SAS
+  
+  - Secured with the storage account key. Provides access to a resouce in either a Blob Storage, Table Storage and Azure Files.
+
+- Account SAS
+  
+  - Secured with the storage account key. Provides access at the storage account level. Can access more than one service at the same time.
+
+```bash
+# First create a resource group and a storage account.
+az group create --name "mjoy-rg" --location "westeurope"
+az storage account create --name "mjoysta" --resource-group "mjoy-rg"
+  --location "westeurope" --sku "Standard_LRS"
+# Than list the automatically generated account keys.
+az storage account keys list --account-name "mjoysta"
+  --resource-group "mjoy-rg"
+# Using one key to create a new storage container
+az storage container create --name "mjoystc" --account-name "mjoysta"
+  --account-key ""
+```
+
+In the storage accounts details, on the Azure Portal, we can create a shared access signature manually via the **Shared access signature** blade. Or we can create a new shared access signature via the created container and use a similar named blade. But via the container, we can create a **user delegation SAS**. Which will extend the shared access signature with additional query parameters.
+
+###### Stored access policies
+
+In Azure there is no option to keep track of generated shared access signatures. But we can setup a stored access policy and link new shared access signatures to it. With this policy we can setup the validity period and permissions, which will be inherited by the shared access signature.
+
+#### Questions
+
+1. Which service can be used to bring external data into Microsoft Graph applications and Services?
+   
+   - *Microsoft Graph connectors.*
+
+2- Which types of permissions are required when an application needs to act on behalf of a signed-in user?
+   
+   - *Delegated permission.*
+
+3- Which MSAL library supports single-page applications?
+   
+   - *MSAL.js, because it is being used in Javascript of Typescript web applications.*
+
+4- Which type of client applications runs on user devices, IoT devices, and browsers?
+   
+   - *Public client applications.*
+
+5- Which type of SAS is recommended where possible and only available with the Blob service?
+   
+   - *User delegation SAS.*
+
+## 08 Implementing Secure Cloud Solutions
+
+In **Standard** tier the keys, secrets and certificates are software-protected and safeguarded by Azure. **Premium** tier we can also import or generate keys in **hardware security modules** (HSMs).
+
+#### Authorization
+
+All of these configurations are stored in a **key vault**. A key vault is a logical group of configurations per application per environment (e.g. ConsoleApp for test). Secrets within a key vault are encrypted as rest. For key vaults we have two permission models.
+
+- Role-based access control.
+  
+  - Manages access for creating and managing key vaults and their attributes and data via the *management plane*.
+
+- Key Vault access policy.
+  
+  - Only for access of the data within a key vault via the *data plane*. Not managing the key vault.
+
+We can setup a key vault via CLI.
+
+```bash
+az group create --name "mjoy-rg" --location "westeurope"
+# Create a new key vault.
+az keyvault create --name "mjoy-kv" --resource-group "mjoy-rg"
+  --location "westeurope"
+# Set an encrypted secret in the key vault.
+az keyvault secret set --vault-name "mjoy-kv" --name "SecretKey"
+  --value "SecretValue"
+# Read the set secret, which will be decrypted automatically.
+az keyvault secret show --vault-name "mjoy-kv" --name "SecretKey"
+# Can also get a secret based on the version.
+# Meaning secrets are versioned.
+az keyvault secret show --vault-name "mjoy-kv" --name "SecretKey"
+  --version "7ee11ec911fc4aae81679175d49a4c58"
+```
+
+#### Authentication
+
+Possible to authenticate with *Key Vault* via **managed identities**. These managed identities will manage credentials itself, so storing and rotation are being handled. Managed identities are a special type of service principal only available with Azure resources. When deleting a managed identity, the corresponding service principal is also deleted. There are two types of managed identities.
+
+The first one is **user-assigned managed identities**. This is a standalone resource tied to an Azure Active Directory identity. Can be assigned to one or more applications. But because it is standalone, the life cycle is managed separately.
+
+```bash
+# Create a new user-assigned managed identity.
+az identity create --name "mjoy-uami" --resource-group "mjoy-rg"
+```
+
+The second one is **system-assigned managed identities** which is enabled within a resource and shares the life cylce of that resource.
+
+```bash
+# Create a new app service plan.
+az appservice plan create --name "mjoy-asp" --resource-group "mjoy-rg"
+  --sku "B1"
+# Create a web app that uses the app service plan.
+az webapp create --name "mjoy-wa" --resource-group "mjoy-rg"
+  --plan "mjoy-asp"
+# Now create a key value reference in Azure Portal manually
+# And enable the system-assigned managed identity
+az webapp identity assign --name "mjoy-wa" --resource-group "mjoy-rg"
+```
+
+#### Azure App Configuration
