@@ -984,3 +984,45 @@ az webapp identity assign --name "mjoy-wa" --resource-group "mjoy-rg"
 ```
 
 #### Azure App Configuration
+
+Application configuration can be stored centrally within Azure. Can add labels to a key-value pair to have duplicate keys, but with different labels to differentiat between them (e.g. Development or Production).
+
+Can reference to a key within a Key Vault, to have the security of Key Vault. As well setting up a soft-delete, purge protection and a retention period before a soft-deleted key-value pair is actually deleted.
+
+```bash
+az group create --name "mjoy-rg" --location "westeurope"
+# Create the App Config.
+az appconfig create --name "mjoy-ac" --resource-group "mjoy-rg"
+  --location "westeurope"
+# And add a new key-value pair to it.
+# The --yes parameter is added to skip confirmation for storing.
+az appconfig kv set --name "mjoy-ac" --key "Chapter8:DemoApp:Greeting"
+  --value "Hello, World!" --yes
+# And add a similar key-value pairs, but with a label.
+az appconfig kv set --name "mjoy-ac" --key "Chapter8:DemoApp:Greeting"
+  --value "Hello, Development!" --label "Development" --yes
+az appconfig kv set --name "mjoy-ac" --key "Chapter8:DemoApp:Greeting"
+  --value "Hello, Development!" --label "Production" --yes
+```
+
+Also possible to setup feature flags, so that a specific feature will only be triggered when a flag matches the criteria. Configuring the feature flags can be done via the **Feature manager** blade of the Azure App Configuration resource.
+
+#### Questions
+
+1. Which type of managed identity shares its life cycle with an Azure resource?
+   
+   - *System-assigned managed identity.*
+
+2. If you want to use App Configuration ro read a secret value, what is the recommended approach to achieve this?
+   
+   - *Store the secret value in a Key Value resource. Than in your App Configuration setup a Key Value reference.*
+
+3. Which method of authenticating your app to Key Vault is recommended for most scenarios and doesn't require you to manage secret rotation?
+   
+   - *Via a managed identity.*
+
+4. Which Key Vault permission model is used for controlling access to the vault's management plane?
+   
+   - *The role-based access contol, or RBAC.*
+
+## 09 Caching and Content Delivery within solutions
