@@ -1026,3 +1026,128 @@ Also possible to setup feature flags, so that a specific feature will only be tr
    - *The role-based access contol, or RBAC.*
 
 ## 09 Caching and Content Delivery within solutions
+
+Implement caching can be done via the so-called **cache-aside pattern**. Meaning there is a cache service next to your own applications, which should be faster than the regular database behind your applications. Two main possible scenarios.
+
+- First is to setup the cache during the first request. Making the first request as the **cold request**, with the second and upcoming requests as the **hot request**. With the downside of the cold request can taking longer to finalize.
+
+- Second is to setup a trigger to reload the cache before expiration. So no cold or hot requests are implied. But with the downside of extra memory usage, because the cached data is not being used immediatly.
+
+#### Azure Cache for Redis
+
+Redis stands for **Remote Dictionary Server** and goes back to 2009 in C as a memory management service. It uses the TCP protocol, default over the ports **6379** and **6380**.
+
+In Azure, Redis cache is fully adopted as a **Azure Cache for Redis** resource, and available over several pricing tiers.
+
+- Basic
+  
+  - No SLA provided, but ideal for development and testing. No clustering or geo-replication. And does not persist the caching data during restarts.
+
+- Standard
+  
+  - Supports fail-over with primary/replica duplication. Still no clustering or geo replication. And does not persist the caching data during restarts. 
+
+- Premium
+  
+  - Same as the *Standard* tier, but it provides clustering. Can persist the data during restarts. For this it has two synced nodes running, so it will hangover to the second node during a restart of the first node.
+
+- Enterprise
+  
+  - Same as the *Premium* tier, but with extra features such as Redis Search, Redis Bloom, and active geo replication. Most suitable for business-critical applications.
+
+- Enterprise Flash
+  
+  - Same as the *Enterprise* tier, but runs on fast non-volatile storage. Also supports Redis Flash and can have memory usage up to 1.5TB.
+
+```bash
+# Ofcourse we need a resource group first.
+az group create --name "mjoy-rg" --location "westeurope"
+# Setup redis instance with the Basic tier.
+az redis create --name "mjoy-redis" --resource-group "mjoy-rg"
+  --location "westeurope" --sku Basic --vm-size C0
+# And check if it is successful by getting the key.
+az redis list-keys --name "mjoy-redis" --resource-group "mjoy-rg"
+  --query primaryKey -o tsv
+```
+
+The access key can also be accessed via the Azure Portal. Next to setting up firewall rules to allow access from specific IP or IP ranges. And managing virtual network integration, which is only available from the **Premium** tier and higher.
+
+Another section is the **Diagnostic settings**, where we can configure the alerts for when the **memory consumption** or **connected clients** have reached the limits of the selected tier.
+
+Redis cache supports string or binary data in a key-value structure. Best pratice is to use self-explanatory keys and values of less than 100KB. Bigger values are possible, but should be split up to enhance the performance. It supports the following data types within the values.
+
+- Strings, with a maximum size of 512MB.
+  
+  - `GET`, `SET` or `GETSET` for managing string values.
+  
+  - `GETBIT` or `SETBIT` for managing binary values.
+  
+  - `INCR`, `DECR` or `INCRBY` for incrementing or decrementing integers stored in string values.
+  
+  - `APPEND` for appending to string values.
+  
+  - `GETRANGE` or `SETRANGE` for getting or updating a part of a string value.
+
+- Lists, as a list of *strings*. Sorted by insertion order. Created by adding new elements to an empty key. Very fast when getting the start or end elements of the list.
+  
+  - `LPUSH` for adding elements to the start.
+  
+  - `RPUSH` for adding elements to the end.
+  
+  - `LRANGE` for getting inserted items.
+
+- Sets, as an unsorted list of *strings*. Can only contain unique elements. Adding same element will overwrite the existing element.
+  
+  - `SADD` for adding new string values.
+  
+  - `SCARD` for getting the number of elements.
+  
+  - `SMEMBER` for getting the actual elements.
+
+- Hashes, as collections of mapped string field and string values. Mainly for storing objects.
+  
+  - `HMSET` for adding fields to a hash.
+  
+  - `HGETALL` for listing all fields in a hash.
+
+In the main overview of the **Azure Cache for Redis** resource in the Azure Portal we can connect with the Redis Console. Here we can execute the following commands.
+
+```bash
+# Set the string key "client" with a value.
+SET client TheCloudShops
+GET client
+# Append the string value to existing string key "client".
+APPEND client ' best reseller'
+GET client
+
+# Set the string key "count" and increment it.
+SET count 1
+INCR count
+GET count
+
+# Set a list of three elements and show all elements.
+LPUSH orders 19
+LPUSH orders 23-R
+RPUSH orders 77
+LRANGE order 0 -1
+# Pop one element from the list.
+LPOP orders
+LRANGE order 0 -1
+
+# Set a set with two elements.
+SADD users user1
+SADD users user2
+# Show the number of elements.
+SCARD users
+# Show all elements.
+SMEMBERS users
+# Show a random element.
+SRANDMEMBER users 1
+
+# Set a hash with four elements
+HMSET mycache sku basic size c0
+# Get all elements from the hash
+HGETALL mycache
+```
+
+#### Azure Content Delivery Network
