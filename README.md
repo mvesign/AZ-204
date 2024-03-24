@@ -1151,3 +1151,76 @@ HGETALL mycache
 ```
 
 #### Azure Content Delivery Network
+
+Azure CDN solution is caching static files globally as close to users as possible. This can be done in two caching modes: loading assets on demand (during first user request) or prepopulating assets to minimize delays with the first request.
+
+Azure CDN leverage partner networks (such as Verizon) without storing data on its own servers. Unless Azure CDN is provisioned with standard tier or with **Azure Front Door**.
+
+Caching statis files is trivial, but with Azure CDN dynamic files can also be cached when using the **dynamic site acceleration** (DSA) algorithm. This algorithm is using the following techniques.
+
+- **Route optimization**. By checking latency from network and based on that choose the fastest and most reliable path.
+
+- **TCP optimizations**. By optimizing TCP packet parameters and leveraging persistent connections.
+
+- **Object prefetch**. Retrieve assets embedded in HTML page, while that page is rendered in the browser but before these assets are requested by the browser.
+
+- **Adaptive image compression**. Applies standard JPEG compression when network is lagging.
+
+When provisioning Azure CDN, it needs deployment of a CDN profile with one or more CDN endpoints. Location not required, this is set to *Global Network*. Requires an unique name and the product, which cannot be changed, like **Standard from Microsoft**, **Standard from Edgio**, or **Premium from Edgio**.
+
+```bash
+# For a CDN via Microsoft Azure, it requires a storage location.
+# We use a Azure Blob Storage for this.
+az group create --name "mjoy-rg" --location "westeurope"
+az storage account create --name "mjoy-bs" --resource-group "mjoy-rg"
+  --location "westeurope"
+# Create the CDN profile.
+az cdn profile create --name "mjoy-cdnp" --resource-group "mjoy-rg"
+  --location "westeurope" --sku Standard_Microsoft
+# Create and link a CDN endpoint.
+az cdn endpoint create --name "mjoy-cdne" --profile-name "mjoy-cdnp"
+  --resource-group "mjoy-rg"
+  --origin mjoy-bs.blob.core.windows.net
+  --origin-host-header mjoy-bs.blob.core.windows.net
+  --origin-path "/files"
+```
+
+###### Caching rules
+
+Caching rules are managed by Time To Live (TTL) values. These values can be obtained via the **Cache-Control** header. CDNs can override this cache control header with either the **Override** or **Bypass** behavior. When this header is not present, a default of 7 days is set for the Time To Live.
+
+In Azure CDN you can configure **global caching rules** per endpoint, affecting all request of that endpoint.
+
+Can also configure **custom caching rules** to match specific paths or extensions. These rules are processed in order and can override the *global caching rule* as well.
+
+###### Purging cached content
+
+Best practise is create a new version when data is updated at source, and not in the cache. But purging a cache specific path is available. Downside is that browsers and proxy servers can have it cached as well. And it can take up to 2 minutes before purging is completed.
+
+#### Questions
+
+1. What Azure Cache for Redis SKU does not provide an SLA?
+   
+   - *Basic*.
+
+2. What Redis command is used to set TTL?
+   
+   - *`EXPIRE`. You can also use `TTL`, but than you will get the remaining time to live of the cached item.*
+
+3. What is the differentce between a Basic and Premium SKU for Azure Cache for Redis?
+   
+   - *Premium supports clustering and data persistent during restarts.*
+
+4. What protocol and port are used for connection to Azure Cache for Redis?
+   
+   - *TCP protocol over the ports 6379 and 6380.*
+
+5. What CDN products are available with a Premium SKU for Azure CDN?
+   
+   - *Next to the Standard SKU, it has asset pre-loading, token authentication, and real-time monitoring.*
+
+6. What are the three ways of controlling TTL in Azure CDN?
+   
+   - *Setting up a global caching rule, a custom caching rule and purging cached content. Other options, such as preloading and geo-filters are not linked to controlling TTL, but more making a resource available.*
+
+## 10 Using Metrics and Log Data
