@@ -1224,3 +1224,55 @@ Best practise is create a new version when data is updated at source, and not in
    - *Setting up a global caching rule, a custom caching rule and purging cached content. Other options, such as preloading and geo-filters are not linked to controlling TTL, but more making a resource available.*
 
 ## 10 Using Metrics and Log Data
+
+Metrics and log data can be storaged, queried and exported within Azure, via several services.
+
+- **Azure Monitor**
+  
+  - Monitoring hub that collects the data. Collect logs for 90 days before it is being overwritten. With 30 days being persisted. Can export the data to storage accounts.
+
+- **Log Analytics**
+
+- **Application Insights**
+  
+  - Similar to Google Analytics, where it can track user events on client-side applications. And server performance on server-side SDKs.
+
+These services can be setup via CLI, but require an Azure Web App (or other service).
+
+```bash
+az group create --name "mjoy-rg" --location "westeurope"
+az appservice plan create --name "mjoy-asp" --resource-group "mjoy-rg"
+  --sku "B1"
+# Create Azure Web App.
+az webapp create --name "mjoy-wa" --resource-group "mjoy-rg"
+  --plan "mjoy-asp"
+# Create and configure Azure SQL.
+az sql server create --name "mjoy-wa-sql" --admin-user "mjoyadmin"
+  --admin-password "[STUPID-PASSWORD]" --resource-group "mjoy-rg"
+az sql db create --name "mjoy-wa-db" --server "mjoy-wa-sql"
+  --service-objective "Basic" --resource-group "mjoy-rg"
+az sql server firewall-rule create --name "Allow connnect"
+  --server "mjoy-wa-sql" --start-ip-address 0.0.0.0
+  --end-ip-address 0.0.0.0 --resource-group "mjoy-rg"
+# Create Azure Storage Account.
+az storage account create --name "mjoysa" --resource-group "mjoy-rg"
+# Create application settings for the Web App.
+az webapp config appsettings set --name "mjoy-wa"
+  --resource-group "mjoy-rg"
+  --setting SqlConnection="[SQL-CONNECTIONSTRING]"
+az webapp config appsettings set --name "mjoy-wa"
+  --resource-group "mjoy-rg"
+  --setting BlobConnection="[BLOB-CONNECTIONSTRING]"
+```
+
+It can occur that services in Azure have downtime due to issues on Azure side. This should never be lower than the SLA of the service. To calculate the SLA of services combined, you need to multiply the services SLA with each other. E.g.
+
+- Azure Web App in Basic tier (99,95) * Azure SQL database (99,99) = 99,94%
+
+
+
+NOT FEELING THE MONITORING SECTION OF THE BOOK. SKIPPING IT.
+
+
+
+## 11 Implementing API Management
