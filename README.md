@@ -1276,3 +1276,113 @@ NOT FEELING THE MONITORING SECTION OF THE BOOK. SKIPPING IT.
 
 
 ## 11 Implementing API Management
+
+API Management (APIM) service is the layer before the web APIs, that handles communications between in coming requests and your APIs. Similar to a proxy instance. When using it, it requires the usage of a **Web Application Firewall** (WAF), such as Azure Front Door, to provide a security measurement. Several mohtly fixed tiers are available.
+
+- Developer
+  
+  - No SLA. Single scalable unit. And 10 MB of cache.
+
+- Basic
+  
+  - 99,95 SLA. Two scalable units. And 50 MB of cache.
+
+- Standard
+  
+  - 99,95 SLA. Four scalable units. And 1 GB of cache.
+
+- Premium
+  
+  - 99,99 SLA. With being deployed in several regions and up to 10 scalable units. And 5 GB of cache.
+
+But when the cost are to high, you can also use the Consumption tier, which is a pay-as-you-use tier. This tier only allows one instance per subscription. It does not provide an internal cache, VNet integration, multi-deployments and self-hosted gateways for connection to the on-premises backend. So, it good for setting up a POC.
+
+To demonstrate the API Management service we need a simple web API, which we can generate with `dotnet`.
+
+```bash
+# First create the resource group with the App Service Plan.
+az group create --name "mjoy-rg" --location "westeurope"
+az appservice plan create --name "mjoy-asp" --resource-group "mjoy-rg"
+  --sku "B1"
+# Than create Web App resource, with Swagger enabled.
+az webapp create --name "mjoy-wa" --resource-group "mjoy-rg"
+  --plan "mjoy-asp"
+az webapp config appsettings set --name "mjoy-wa"
+  --resource-group "mjoy-rg"
+  --settings "ASPNETCORE_ENVIRONMENT=Development"
+# And create a simple web API within a solution.
+dotnet new webapi --name "DemoCatalog"
+dotnet new sln --name "DemoCatalog"
+dotnet sln add .\DemoCatalog\DemoCatalog.csproj
+# Publish the web API and manually ZIP the generated resources.
+dotnet publish 'DemoCatalog' -o 'publish'
+cd .\publish
+# Finally deploy the ZIP file to the web API.
+az webapp deploy --name "mjoy-wa" --resource-group "mjoy-rg" --type zip
+  --src-path "DemoCatalog.zip"
+```
+
+When setting up a API Management, the following is required.
+
+- **Unique name**, which can be used as the Fully Qualified Domain Name (FQDN).
+
+- **Organization name** and **administrators email**, to setup the developer portal.
+
+- **Preferred location**, wich is best to use the resource group location.
+
+- **Pricing tier**.
+
+You can also setup.
+
+- **Scaling units**.
+
+- **Managed identities**, for communication with Azure resources that requires authorization and authentication (e.g. Key Vault).
+
+- **VNet integration**, to enable internal firewall for external connections.
+
+- **Protocol settings**, to allow setup of different TLS versions.
+
+```bash
+# Here we create the actual API Management service.
+az apim create --name "mjoy-apim" --location "westeurope"
+  --resource-group "mjoy-rg" --publisher-name "mjoy-apim"
+  --publisher-email "mjoy-apim@demo.com" --sku-name Consumption
+# And we can link our Web API to our API Management service.
+az apim api import --service-url "https://mjoy-wa.azurewebsites.net/"
+  --display-name "weather-api" --api-id "weather-api" --path "weather-api"
+  --specification-url "https://mjoy-wa.azurewebsites.net/swagger/v1/swagger.json"
+  --specification-format "OpenApiJson" --resource-group "mjoy-rg"
+  --service-name "mjoy-apim"
+```
+
+#### Products and subscriptions
+
+Product is a set of logically grouped APIs. Subscription is a key provided for a customer, who wants to call APIs within the product. Product can have more than one subscription.
+
+Three types of products exist.
+
+- Free
+
+- Billable
+
+- Trail
+
+When using a subscription, the header **Ocp-Apim-Subscription-Key** is required for each API request. Containing the subscription key.
+
+#### Authentication
+
+The developer portal can be access by unauthenticated users and users with an account. An account requires an email and password, but can be setup via several identity providers (e.g. Azure Active Directory). This account is than linked a subscription key.
+
+A user account can be linked to a group. There are three immutabke groups. But a custom group can also be setup by an administrator.
+
+- **Administrators**, with full permissions on products and APIs.
+
+- **Developers**, with authenticated users who can test APIs based on the subscription.
+
+- **Guests**, for unauthenticated users who can view APIs but cannot call them.
+
+#### External cache
+
+When build-in cache of the choosen price tier is not sufficient, it is possible to link an external cache (such as *Azure Cache for Redis*) to the setup API Management service. It is required to provide a connection string supported by `StackExchange.Redis`. This method is ideal for when the Consumption tier is selected, which does not have a build-in cache in API Management.
+
+ 
