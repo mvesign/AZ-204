@@ -1385,4 +1385,151 @@ A user account can be linked to a group. There are three immutabke groups. But a
 
 When build-in cache of the choosen price tier is not sufficient, it is possible to link an external cache (such as *Azure Cache for Redis*) to the setup API Management service. It is required to provide a connection string supported by `StackExchange.Redis`. This method is ideal for when the Consumption tier is selected, which does not have a build-in cache in API Management.
 
- 
+#### Advanced policies
+
+Can setup a policy per operation, but also a global policy. Policies are defined in XML format. When defining a global policy, it is required to setup the policy per operation and refer to the global policy via the `<base>` element.
+
+Several sections are mandatory in a policy.
+
+- `<inbound>`
+
+- `<backend>`
+
+- `<outbond>`
+
+- `<on-error>`
+
+Other elements are also possible, such as.
+
+- `<mock-response>`, to mock an API response containing the HTTP status code and content type. Must be setup in the `<inbound>` element.
+
+- `<return-response>`, to setup a response. Must contain the elements `<set-status>`, `<set-header>` and `<set-body>`. Must be setup in the `<inbound>` element.
+
+- `<cache-lookup>`, to the setup the caching. Must be setup in the `<inbound>` element. But requires the `<cache-store>` element, to configure the cache duration.
+
+- `<rate-limit>`, to enable request throttling. Must be setup in the `<inbound>` element.
+
+- `<quote-by-key>`, also to enable request throttling. Must be setup in the `<inbound>` element.
+
+#### Questions
+
+1. Whats is the REST standard and what HTTP verbs are used in REST?
+   
+   - *REST is the abbreviation for **Representational State Transfer**, which implies the HTTP verbs **GET**, **POST**, **PUT** and **DELETE**.*
+
+2. Doe APIM support horizontal scaling?
+   
+   - *Yes, but only in the Basic, Standard, and Premium pricing tier.*
+
+3. What are the three ways to connect existing web APIs from your Azure subscription to the APIM server?
+   
+   - *From **Swagger**, **Web Application Description Language** (WADL) or **Web Services Description Language** (WSDL).*
+
+4. Are there any disadvantages to using a consumption-based pricing for APIM?
+   
+   - *Yes. This tier only allows one instance per subscription. It does not provide an internal cache, VNet integration, multi-deployments and self-hosted gateways for connection to the on-premises backend.*
+
+5. What is the policy expression syntax based on?
+   
+   - *Based on XML.*
+
+## 12 Developing Event-Based Solutions
+
+Several services persist in the Azure domain to setup event-based solutions
+
+- Azure Event Hubs
+
+- Azure IoT Hubs
+
+- Azure Notification Hubs
+
+- Azure Event Grid
+
+All of them implement the **pubished-subscriber** pattern.
+
+#### Azure Event Hubs
+
+Setting up Azure Event Hubs require the setup of an **Event Hub namespace**. Which is a virtual server that needs to be deployed in Azure. A FQDN will be provided after setting up an Event Hub namespace. And accepts connections with **MQ Telemetry Transport** (MQTT), **Advanced Message Queueing Protocol** (AMQP), **AMQP over WebSockets** and **HTTPS**. 
+
+Following price tiers can be choosen from.
+
+- **Basic**
+  
+  - Retention period of 1 day. No dynamic partitin scaling, capturing events, and VNet integration. Up to 40 scalable units.
+
+- **Standard**
+  
+  - Retention period of 7 days. Can capture events and allowes VNet integration. Up to 40 scalable units.
+
+- **Premium**
+  
+  - Retention period of 90 days. Allows all features without any throughput limits.
+
+- **Dedicated**
+  
+  - Same as *Premium* tier. Provisioned in an exclusive single-tenant environment.
+
+Events within an Event Hub will persist until it is being consumed by a consumer or the retention period has passed. After that the copy will only exists in the blob for analysis purposes.
+
+Consumers can be setup within a **consumer group**. By default the **$Default** consumer group will be used when none is provided. Events can be tagged with a consumer group, making it only consumable for consumers within that consumer group.
+
+Authentication and authorization are handled via **shared access signature** (SAS) tokens. Each SAS token can have the **listen**, **send**, and **manage** rights. Where the **manage** right is for listening and sending events.
+
+```bash
+# Create the resource group and a blob storage account.
+az group create --name "mjoy-rg" --location "westeurope"
+az storage account create --name "mjoysa" --resource-group "mjoy-rg"
+az storage account keys list --account-name "mjoysa" --query [0].value
+az storage container create --name "capdate" --public-access "blob"
+  --account-name "mjoysa" --account-key "[KEY]"
+# Create the Event Hub namespace.
+az eventhubs namespace create --name "mjoy-ehn"
+  --resource-group "mjoy-rg" --location "westeurope" --sku Standard
+# Create the Event Hub.
+az eventhubs eventhub create --name "mjoy-eh" --namespace-name "mjoy-ehn"
+  --resource-group "mjoy-rg"
+# Enable event capturing in storage account.
+az eventhubs eventhub update --name "mjoy-eh" --namespace-name "mjoy-ehn"
+  --enable-capture --destination-name EventHubArchive.AzureBlockBlob
+  --storage-account "mjoysa" --blob-container capdate
+  --resource-group "mjoy-rg"
+az eventhubs eventhub authorization-rule create --eventhub-name "mjoy-eh"
+  --namespace-name "mjoy-ehn" --name apps --rights Listen Send
+  --resource-group "mjoy-rg"
+# Get the connection strings. Can also be retrieved from Azure Portal.
+az eventhubs eventhub authorization-rule keys list --name apps
+  --eventhub-name "mjoy-eh" --namespace-name "mjoy-ehn"
+  --resource-group EventHubDemo-RG --query primaryConnectionString
+az storage account show-connection-string --name "mjoysa"
+  --resource-group EventHubDemo-RG --query connectionString
+```
+
+#### Azure IoT Hub
+
+TODO
+
+#### Questions
+
+1. What is a namespace?
+   
+   - *Virtual server required to provision an Event Hub.*
+
+2. How is Azure IoT Hub different from Event Hubs?
+   
+   - TODO
+
+3. How long does an event persist in Event Hubs?
+   
+   - *An event persist until it is being consumed by a consumer or the retention period has passed. The retention period depends on the selected pricing tier.*
+
+4. What service helps you connect Azure Functions and Event Hubs?
+   
+   - TODO
+
+5. What type of authentication can be used to connect IoT devices to Azure IoT Hub?
+   
+   - TODO
+
+6. What is a possible misconfiguration for an event handler that will not allow it to receive all events send by Event Grid?
+   
+   - TODO
