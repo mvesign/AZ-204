@@ -1451,7 +1451,7 @@ All of them implement the **pubished-subscriber** pattern.
 
 Setting up Azure Event Hubs require the setup of an **Event Hub namespace**. Which is a virtual server that needs to be deployed in Azure. A FQDN will be provided after setting up an Event Hub namespace. And accepts connections with **MQ Telemetry Transport** (MQTT), **Advanced Message Queueing Protocol** (AMQP), **AMQP over WebSockets** and **HTTPS**. 
 
-Following price tiers can be choosen from.
+Following price tiers can be chosen from.
 
 - **Basic**
   
@@ -1506,6 +1506,62 @@ az storage account show-connection-string --name "mjoysa"
 
 #### Azure IoT Hub
 
+Azure IoT Hub is designed for consuming streaming telemetry and managing of IoT devices. It can communicate with IoT devices via TCP, **MQ Telemetry Transport** (MQTT), **Advanced Message Queueing Protocol** (AMQP), and **HTTPS**. Performance of Azure IoT Hub is the most valuable metric.
+
+Following price tiers can be chosen from.
+
+- **Basic (B1-B3)**
+  
+  - Allows to ingest 0,4 MB to 300 MB of messages, with all described protocols. Does not support cloud-to-device messages.
+
+- **Standard (S1-S3)**
+  
+  - Similar to Basic tier. Does support cloud-to-device messages. Supports Azure IoT Edge, for us to orchestrate containers and their configuration on the devices itself.
+
+- **Free (F1)**
+  
+  - Similar to Standard, but only one instance per subscription.
+
+To register a device, we should use the **Device Provisioning Service** (DPS). This service handles authentication and authorizaion either via a shared access signature (SAS) or a certificate. Which both can be revoked when the device is stolen or no longer needed.
+
+In Azure IoT Hub no need to provision a namespace. Only require a pricing tier and unique name.
+
+```bash
+# Add IoT and streaming analytics extensions to our subscription.
+az extension add --upgrade --name azure-iot
+az extension add --upgrade --name stream-analytics
+# Setup the resource group and storage account.
+az group create --name "mjoy-rg" --location "westeurope"
+az storage account create --name "mjoysa" --resource-group "mjoy-rg"
+az storage container create --account-name "mjoysa" --name state
+  --account-key "[SA-ACCOUNT-KEY]" --auth-mode key
+# Creat the IoT hub.
+az iot hub create --name "mjoy-iothub" --resource-group "mjoy-rg"
+  --sku S1
+az iot hub policy show --name "iothubowner" --hub-name "mjoy-oithub"
+  --query primaryKey
+# Setup stream analytics.
+az stream-analytics job create --job-name "mjoy-iotjob"
+  --resource-group "mjoy-rg" --output-error-policy "Drop"
+  --data-locale "en-US" --functions "[]" --inputs "[SOME-INPUT-FORMAT]"
+  --outputs "[SOME-OUTPUT-FORMAT]"
+az stream-analytics transformation create --name Transformation
+  --job-name "mjoy-iotjob" --resource-group "mjoy-rg"
+  --streaming-units "1"
+  --saql "SELECT * INTO outblob FROM inhub WHERE humidity > 70"
+az stream-analytics job start --job-name "mjoy-iothub"
+  --resource-group "mjoy-rg" --output-start-mode JobStartTime
+# Provision a device
+az iot hub device-identity create --name "mjoy-iotdevice"
+  --device-id "vdevice"
+az iot hub device-identity connection-string show --device-id "vdevice"
+  --name "mjoy-iotdevice" --query connectionString
+```
+
+The last command returns the connection string of the device we have registered in our Azure IoT Hub. This connection string can be setup at [Raspberry Pi Azure IoT Web Simulator (azure-samples.github.io)](https://azure-samples.github.io/raspberry-pi-web-simulator/), where we can mock a IoT device.
+
+#### Azure Event Grid
+
 TODO
 
 #### Questions
@@ -1516,7 +1572,7 @@ TODO
 
 2. How is Azure IoT Hub different from Event Hubs?
    
-   - TODO
+   - *Azure IoT Hub is specifically designed to consume streaming telemetry of and managing IoT devices.*
 
 3. How long does an event persist in Event Hubs?
    
@@ -1528,7 +1584,7 @@ TODO
 
 5. What type of authentication can be used to connect IoT devices to Azure IoT Hub?
    
-   - TODO
+   - *Two types, a shared access signature (SAS) or a certificate. Which both can be revoked when the device is stolen or no longer needed.*
 
 6. What is a possible misconfiguration for an event handler that will not allow it to receive all events send by Event Grid?
    
