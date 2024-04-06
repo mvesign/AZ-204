@@ -646,17 +646,18 @@ await client.ReplaceDocumentAsync(
 1. Which APIs are supported by CosmosDB?
    
    - *There are five at the moment. Table API, MongoDB API, Cassandra API, Gremlin API and the default Core (SQL) API.*
-     2-  What is the difference between a composite index and a range index?
-   - *Range index consist on a single field of the string or number type, while composite consist of multiple fields.*
 
-3- What is the defailt CosmosDB backup option?
+2-  What is the difference between a composite index and a range index?
 
-- *Periodic backup. Where the retention policy is limited by month, with backup intervals at a minimum of 1 hour.
-  Also noteworthy is that a restoration required sending a request to the support team.*
+- *Range index consist on a single field of the string or number type, while composite consist of multiple fields.*
+3. What is the defailt CosmosDB backup option?
+   
+   - *Periodic backup. Where the retention policy is limited by month, with backup intervals at a minimum of 1 hour.
+     Also noteworthy is that a restoration required sending a request to the support team.*
 
-4- Can you execute the CosmosDB trigger from the Azure portal?
-
-- *No. They should explicitly be called from the CosmosDB SDK.*
+4. Can you execute the CosmosDB trigger from the Azure portal?
+   
+   - *No. They should explicitly be called from the CosmosDB SDK.*
 
 5- What language is used for stored procedures?
 
@@ -909,20 +910,20 @@ In Azure there is no option to keep track of generated shared access signatures.
    - *Microsoft Graph connectors.*
 
 2- Which types of permissions are required when an application needs to act on behalf of a signed-in user?
-   
-   - *Delegated permission.*
+
+- *Delegated permission.*
 
 3- Which MSAL library supports single-page applications?
-   
-   - *MSAL.js, because it is being used in Javascript of Typescript web applications.*
+
+- *MSAL.js, because it is being used in Javascript of Typescript web applications.*
 
 4- Which type of client applications runs on user devices, IoT devices, and browsers?
-   
-   - *Public client applications.*
+
+- *Public client applications.*
 
 5- Which type of SAS is recommended where possible and only available with the Blob service?
-   
-   - *User delegation SAS.*
+
+- *User delegation SAS.*
 
 ## 08 Implementing Secure Cloud Solutions
 
@@ -1269,11 +1270,7 @@ It can occur that services in Azure have downtime due to issues on Azure side. T
 
 - Azure Web App in Basic tier (99,95) * Azure SQL database (99,99) = 99,94%
 
-
-
 NOT FEELING THE MONITORING SECTION OF THE BOOK. SKIPPING IT.
-
-
 
 ## 11 Implementing API Management
 
